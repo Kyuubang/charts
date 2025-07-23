@@ -1,0 +1,25 @@
+apiVersion: v1
+entries:
+  vector-kube-metrics:
+  - apiVersion: v2
+    appVersion: 0.34.0
+    created: "2025-07-23T06:52:40.818669079Z"
+    description: A Helm chart for Vector to collect and forward Kubernetes metrics
+      using ServiceMonitor scraping
+    digest: 9ec30c5c8c130d73f2bedd3d748664716401295c68a6c39a2320e15d1f323b22
+    home: https://vector.dev/
+    keywords:
+    - vector
+    - metrics
+    - kubernetes
+    - monitoring
+    - observability
+    maintainers:
+    - name: Kyuubang
+    name: vector-kube-metrics
+    sources:
+    - https://github.com/vectordotdev/vector
+    urls:
+    - vector-kube-metrics-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-07-23T06:52:40.818679027Z"
