@@ -1,0 +1,217 @@
+# Global configuration
+global:
+  clusterName: "kubernetes"
+  environment: "production"
+
+# Vector image configuration
+image:
+  repository: timberio/vector
+  tag: "0.34.0-debian"
+  pullPolicy: IfNotPresent
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+# Resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1
+
+# Replica count
+replicaCount: 1
+
+# Vector configuration
+vector:
+  # Data directory for Vector
+  dataDir: "/vector-data-dir"
+
+  # Log level
+  logLevel: "info"
+
+    # Metrics collection configuration
+  metrics:
+    # Enable Prometheus metrics scraping from ServiceMonitors
+    prometheus:
+      enabled: true
+      # ServiceMonitor discovery configuration
+      serviceMonitor:
+        # Enable automatic ServiceMonitor discovery
+        enabled: true
+        # Namespaces to discover ServiceMonitors from (empty = all namespaces)
+        namespaces: 
+          - "monitor"
+          - "kube-system" 
+          - "ingress-system"
+        # Label selector for ServiceMonitors (empty = all ServiceMonitors)
+        selector:
+          matchLabels:
+            release: "prometheus"
+        # Interval for scraping
+        scrapeInterval: "30s"
+        # Timeout for scraping
+        scrapeTimeout: "10s"
+        # Honor labels from targets
+        honorLabels: true
+      
+      # Static targets configuration (optional - for non-ServiceMonitor endpoints)
+      staticConfigs: []
+      # Example:
+      # - targets:
+      #   - "my-app.default.svc.cluster.local:8080"
+      #   - "another-service.monitoring.svc.cluster.local:9090"
+      #   labels:
+      #     job: "custom-apps"
+      #     environment: "production"
+
+      # Kubernetes API metrics
+    kubernetesApi:
+      enabled: true
+      # Metrics to collect from Kubernetes API
+      resources:
+      - "pods"
+      - "nodes"
+      - "services"
+      - "endpoints"
+      - "deployments"
+      - "replicasets"
+      - "daemonsets"
+      - "statefulsets"
+      - "configmaps"
+      - "secrets"
+      - "persistentvolumes"
+      - "persistentvolumeclaims"
+      - "namespaces"
+
+    # Container metrics from kubelet
+    kubelet:
+      enabled: true
+      # Metrics endpoints to scrape
+      endpoints:
+      - "/metrics"
+      - "/metrics/cadvisor"
+      - "/metrics/probes"
+      port: 10250
+      scheme: "https"
+      # TLS configuration
+      tls:
+        insecureSkipVerify: true
+
+    # API server metrics  
+    apiserver:
+      enabled: true
+      port: 6443
+      scheme: "https"
+      endpoint: "/metrics"
+      # TLS configuration
+      tls:
+        insecureSkipVerify: true
+
+  # Sinks configuration for forwarding metrics
+  sinks:
+    # Example: Forward to Prometheus remote write
+    prometheus:
+      enabled: false
+      endpoint: ""
+      # Optional authentication
+      auth:
+        username: ""
+        password: ""
+        bearer_token: ""
+      # Optional headers
+      headers: {}
+      # Batch settings
+      batch:
+        maxEvents: 1000
+        timeoutSecs: 1
+
+    # Example: Forward to Datadog
+    datadog:
+      enabled: false
+      apiKey: ""
+      site: "datadoghq.com"
+      # Optional tags
+      tags: {}
+
+    # Example: Forward to console (for debugging)
+    console:
+      enabled: false
+      format: "json"
+
+  # Additional custom configuration
+  customConfig: {}
+
+# Monitoring configuration
+monitoring:
+  # ServiceMonitor for Vector itself
+  serviceMonitor:
+    enabled: false
+    labels: {}
+    annotations: {}
+    interval: "30s"
+    scrapeTimeout: "10s"
+    path: "/metrics"
+
+# Persistence configuration
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi

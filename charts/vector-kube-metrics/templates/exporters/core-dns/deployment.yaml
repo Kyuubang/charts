@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vector-kube-metrics.fullname" . }}-coredns
+  labels:
+    {{- include "vector-kube-metrics.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "vector-kube-metrics.fullname" . }}-coredns
+  template:
+    metadata:
+      labels:
+        app: {{ include "vector-kube-metrics.fullname" . }}-coredns
+    spec:
+      serviceAccountName: sa-{{ include "vector-kube-metrics.fullname" . }}-metrics
+      containers:
+      - name: vector
+        image: {{ .Values.vector.image.repository }}:{{ .Values.vector.image.tag }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/vector
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "vector-kube-metrics.fullname" . }}-coredns

@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-{{ include "vector-kube-metrics.fullname" . }}-metrics
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metrics-access-role
+rules:
+- apiGroups: [ "" ]
+  resources: [ "pods", "nodes", "services", "endpoints" ]
+  verbs: [ "get", "list", "watch" ]
+- nonResourceURLs: [ "/metrics" ]
+  verbs: [ "get" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-access-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metrics-access-role
+subjects:
+- kind: ServiceAccount
+  name: sa-{{ include "vector-kube-metrics.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }} # Match the namespace above

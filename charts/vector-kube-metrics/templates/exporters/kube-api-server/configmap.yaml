@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vector-kube-metrics.fullname" . }}-coredns
+  labels:
+    {{- include "vector-kube-metrics.labels" . | nindent 4 }}
+  namespace: monitoring
+data:
+  vector.yaml: |
+    sources:
+      kubeapiserver-metrics:
+        type: prometheus_scrape
+        endpoints:
+          - address: https://kubernetes.default.svc.cluster.local/metrics
+        scrape_interval_secs: 10
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          
+    
+    transforms:
+      add-cluster-metadata:
+        type: remap
+        inputs:
+        - kubeapiserver-metrics
+        source: |
+          # Try to get cluster name from various sources
+          .tags.cluster = {{ .Values.global.clusterName }}
+
+    sinks:
+      to-victoria-metrics:
+        type: prometheus_remote_write
+        inputs:
+        - add-cluster-metadata
+        endpoint: http://vm.da.private.modakita:8428/api/v1/write

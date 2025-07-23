@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vector-kube-metrics.fullname" . }}-coredns
+  labels:
+    {{- include "vector-kube-metrics.labels" . | nindent 4 }}
+  namespace: monitoring
+data:
+  vector.yaml: |
+    sources:
+      coredns-metrics:
+        type: prometheus_scrape
+        endpoints:
+          - address: "http://{{ include "vector-kube-metrics.fullname" . }}-coredns.kube-system.svc.cluster.local:{{ .Values.coreDns.service.port }}/metrics"
+        scrape_interval_secs: 10
+
+    
+    transforms:
+      add-cluster-metadata:
+        type: remap
+        inputs:
+        - coredns-metrics
+        source: |
+          # Try to get cluster name from various sources
+          .tags.cluster = {{ .Values.Clustername }}
+
+    sinks:
+      to-victoria-metrics:
+        type: prometheus_remote_write
+        inputs:
+        - add-cluster-metadata
+        endpoint: http://vm.da.private.modakita:8428/api/v1/write
