@@ -1,0 +1,101 @@
+# Data Processing Pipeline Example
+# This example shows how to set up a data processing pipeline with multiple stages
+
+image: "python:3.11-alpine"
+
+env:
+- name: "PYTHONPATH"
+  value: "/app"
+- name: "DATA_SOURCE_URL"
+  value: "https://api.example.com/data"
+- name: "OUTPUT_BUCKET"
+  value: "s3://my-data-bucket"
+- name: "ENVIRONMENT"
+  value: "production"
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "512Mi"
+  requests:
+    cpu: "500m"
+    memory: "256Mi"
+
+cronjobs:
+# Data ingestion - every 4 hours
+- name: "data-ingestion"
+  schedule: "0 */4 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "python"
+  - "/app/ingest_data.py"
+  - "--source"
+  - "$DATA_SOURCE_URL"
+  - "--batch-size"
+  - "1000"
+
+# Data processing - every 6 hours (offset by 1 hour from ingestion)
+- name: "data-processing"
+  schedule: "0 1,7,13,19 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "python"
+  - "/app/process_data.py"
+  - "--input-path"
+  - "/data/raw"
+  - "--output-path"
+  - "/data/processed"
+
+# Data validation - every 6 hours (offset by 2 hours from ingestion)
+- name: "data-validation"
+  schedule: "0 2,8,14,20 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "python"
+  - "/app/validate_data.py"
+  - "--data-path"
+  - "/data/processed"
+  - "--rules-file"
+  - "/config/validation_rules.json"
+
+# Report generation - daily at 6 AM
+- name: "daily-report"
+  schedule: "0 6 * * *"
+  timezone: "America/New_York"
+  suspend: false
+  command:
+  - "python"
+  - "/app/generate_report.py"
+  - "--date"
+  - "$(date -d 'yesterday' +%Y-%m-%d)"
+  - "--format"
+  - "pdf"
+
+# Weekly summary - Monday at 8 AM
+- name: "weekly-summary"
+  schedule: "0 8 * * 1"
+  timezone: "America/New_York"
+  suspend: false
+  command:
+  - "python"
+  - "/app/weekly_summary.py"
+  - "--start-date"
+  - "$(date -d 'last monday' +%Y-%m-%d)"
+  - "--end-date"
+  - "$(date -d 'last sunday' +%Y-%m-%d)"
+
+# Data cleanup - daily at 1 AM
+- name: "data-cleanup"
+  schedule: "0 1 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "python"
+  - "/app/cleanup.py"
+  - "--older-than"
+  - "30d"
+  - "--dry-run"
+  - "false"

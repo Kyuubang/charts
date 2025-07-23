@@ -1,0 +1,44 @@
+{{- range .Values.cronjobs }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .name }}
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: {{ .name }}
+        spec:
+          containers:
+          - name : {{ .name }}
+            env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value }}
+            {{- end }}
+            image: {{ .Values.image }}
+            imagePullPolicy: Always
+            command:
+            {{ - range .command }}
+            - "{{ . }}"
+            {{ - end }}
+            resources: {{ toYaml .Values.resources | nindent 12 }}
+          dnsPolicy: ClusterFirst
+          {{ if .Values.imagePullSecrets }}
+          imagePullSecrets:
+          {{- range .Values.imagePullSecrets }}
+          - name: {{ .name }}
+          {{- end }}
+          {{ end }}
+          restartPolicy: Never
+  schedule: {{ .schedule }}
+  successfulJobsHistoryLimit: 3
+  suspend: {{ .suspend | default "false" }}
+  timezone: {{ .timezone | default "UTC" }}
+---
+{{- end }}

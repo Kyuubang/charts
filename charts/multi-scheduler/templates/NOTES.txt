@@ -1,0 +1,85 @@
+{{- $cronJobCount := len .Values.cronjobs }}
+{{- $suspendedJobs := 0 }}
+{{- range .Values.cronjobs }}
+  {{- if .suspend }}
+    {{- $suspendedJobs = add $suspendedJobs 1 }}
+  {{- end }}
+{{- end }}
+
+🎉 Multi-Scheduler has been installed successfully!
+
+📊 Installation Summary:
+   ✅ Total CronJobs created: {{ $cronJobCount }}
+   {{- if gt $suspendedJobs 0 }}
+   ⏸️  Suspended CronJobs: {{ $suspendedJobs }}
+   ▶️  Active CronJobs: {{ sub $cronJobCount $suspendedJobs }}
+   {{- else }}
+   ▶️  All CronJobs are active
+   {{- end }}
+   🐳 Container Image: {{ .Values.image }}
+
+📋 CronJobs Created:
+{{- range .Values.cronjobs }}
+   • {{ .name }}
+     Schedule: {{ .schedule }}
+     Timezone: {{ .timezone | default "UTC" }}
+     {{- if .suspend }}
+     Status: ⏸️  SUSPENDED
+     {{- else }}
+     Status: ▶️  ACTIVE
+     {{- end }}
+{{- end }}
+
+🔍 How to monitor your CronJobs:
+
+   # View all CronJobs
+   kubectl get cronjobs
+
+   # Check CronJob details
+   kubectl describe cronjob <cronjob-name>
+
+   # View recent jobs
+   kubectl get jobs --sort-by=.metadata.creationTimestamp
+
+   # Check logs from latest job execution
+   kubectl logs -l app=<cronjob-name> --tail=100
+
+📅 Schedule Examples:
+   • "0 2 * * *"     - Daily at 2:00 AM
+   • "*/15 * * * *"  - Every 15 minutes
+   • "0 3 * * 0"     - Weekly on Sunday at 3:00 AM
+   • "0 */6 * * *"   - Every 6 hours
+
+⚙️ Management Commands:
+
+   # Suspend a CronJob
+   kubectl patch cronjob <cronjob-name> -p '{"spec":{"suspend":true}}'
+
+   # Resume a CronJob
+   kubectl patch cronjob <cronjob-name> -p '{"spec":{"suspend":false}}'
+
+   # Manually trigger a job
+   kubectl create job --from=cronjob/<cronjob-name> <job-name>
+
+📚 Documentation:
+   For more information, see the README.md and INSTALL.md files in the chart directory.
+
+{{- if .Values.imagePullSecrets }}
+
+🔐 Using Image Pull Secrets:
+{{- range .Values.imagePullSecrets }}
+   • {{ .name }}
+{{- end }}
+{{- end }}
+
+{{- if gt $suspendedJobs 0 }}
+
+⚠️  Note: {{ $suspendedJobs }} CronJob(s) are currently suspended. To activate them:
+{{- range .Values.cronjobs }}
+  {{- if .suspend }}
+   kubectl patch cronjob {{ .name }} -p '{"spec":{"suspend":false}}'
+  {{- end }}
+{{- end }}
+{{- end }}
+
+Thank you for using Multi-Scheduler! 🚀

@@ -1,0 +1,122 @@
+# Multi-Scheduler Helm Chart Configuration
+# This file contains the default configuration values for the multi-scheduler chart.
+# Override these values by creating your own values file and using: helm install -f your-values.yaml
+
+# =============================================================================
+# GLOBAL CONFIGURATION
+# These settings apply to all CronJobs created by this chart
+# =============================================================================
+
+# Container image used for all CronJobs
+# Format: [registry/]repository:tag
+# Examples: 
+#   - nginx:latest
+#   - alpine:3.18
+#   - myregistry.com/myapp:v1.0.0
+image: "nginx:latest"
+
+# Global environment variables (applied to all CronJobs)
+# These will be injected into every container
+env:
+- name: "LOG_LEVEL"
+  value: "INFO"
+- name: "ENVIRONMENT"
+  value: "production"
+
+# Global resource limits and requests (applied to all CronJobs)
+# Adjust these based on your application's requirements
+resources:
+  limits:
+    cpu: "100m" # 0.1 CPU cores
+    memory: "128Mi" # 128 MiB
+  requests:
+    cpu: "50m" # 0.05 CPU cores  
+    memory: "64Mi" # 64 MiB
+
+# Image pull secrets for private container registries
+# Create secrets first: kubectl create secret docker-registry <name> ...
+# Then reference them here
+imagePullSecrets:
+- name: "my-registry-secret"
+
+# =============================================================================
+# CRONJOBS CONFIGURATION
+# Define your scheduled jobs here
+# =============================================================================
+
+cronjobs:
+# Example 1: Daily backup job
+- name: "daily-backup"
+  schedule: "0 2 * * *" # Daily at 2:00 AM UTC
+  suspend: false # Job is active
+  timezone: "UTC" # Timezone for the schedule
+  # Optional: Define custom command for this job
+  # command:
+  #   - "/bin/sh"
+  #   - "-c"
+  #   - "/scripts/backup.sh"
+
+  # Example 2: Weekly cleanup job with different timezone
+- name: "weekly-cleanup"
+  schedule: "0 3 * * 0" # Weekly on Sunday at 3:00 AM
+  suspend: false
+  timezone: "America/New_York" # Eastern Time
+  # command:
+  #   - "/scripts/cleanup.sh"
+  #   - "--verbose"
+
+  # Example 3: Hourly health check
+- name: "health-check"
+  schedule: "0 * * * *" # Every hour at minute 0
+  suspend: false
+  timezone: "UTC"
+  # command:
+  #   - "/usr/local/bin/health-check"
+
+  # Example 4: Custom job (initially suspended)
+- name: "custom-task"
+  schedule: "*/15 * * * *" # Every 15 minutes
+  suspend: true # Initially suspended - won't run until activated
+  timezone: "Europe/London" # British Time
+  # command:
+  #   - "/app/custom-task"
+  #   - "--config=/etc/config.yaml"
+
+  # =============================================================================
+  # SCHEDULE FORMAT REFERENCE
+  # =============================================================================
+  #
+  # Cron format: minute hour day-of-month month day-of-week
+  # ┌───────────── minute (0 - 59)
+  # │ ┌───────────── hour (0 - 23)
+  # │ │ ┌───────────── day of the month (1 - 31)
+  # │ │ │ ┌───────────── month (1 - 12)
+  # │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+  # │ │ │ │ │
+  # * * * * *
+  #
+  # Common examples:
+  # "0 2 * * *"       - Daily at 2:00 AM
+  # "*/15 * * * *"    - Every 15 minutes
+  # "0 */4 * * *"     - Every 4 hours
+  # "0 3 * * 0"       - Weekly on Sunday at 3:00 AM
+  # "0 1 1 * *"       - Monthly on the 1st at 1:00 AM
+  # "0 0 1 1 *"       - Yearly on January 1st at midnight
+  #
+  # =============================================================================
+  # TIMEZONE REFERENCE
+  # =============================================================================
+  #
+  # Common timezones:
+  # - UTC                    (Coordinated Universal Time)
+  # - America/New_York       (Eastern Time)
+  # - America/Chicago        (Central Time)
+  # - America/Denver         (Mountain Time)
+  # - America/Los_Angeles    (Pacific Time)
+  # - Europe/London          (British Time)
+  # - Europe/Paris           (Central European Time)
+  # - Asia/Tokyo             (Japan Standard Time)
+  # - Asia/Shanghai          (China Standard Time)
+  # - Australia/Sydney       (Australian Eastern Time)
+  #
+  # Full list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones

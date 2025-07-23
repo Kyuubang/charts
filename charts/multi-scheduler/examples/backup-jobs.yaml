@@ -1,0 +1,73 @@
+# Backup Jobs Example
+# This example shows how to set up multiple backup jobs with different schedules
+
+image: "alpine:latest"
+
+env:
+- name: "BACKUP_RETENTION_DAYS"
+  value: "30"
+- name: "BACKUP_PATH"
+  value: "/backups"
+- name: "LOG_LEVEL"
+  value: "INFO"
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+  requests:
+    cpu: "200m"
+    memory: "128Mi"
+
+cronjobs:
+# Database backup - daily at 2 AM
+- name: "database-backup"
+  schedule: "0 2 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Starting database backup..."
+    mysqldump -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME > /backups/db-$(date +%Y%m%d-%H%M%S).sql
+    echo "Database backup completed"
+
+# File system backup - daily at 3 AM
+- name: "filesystem-backup"
+  schedule: "0 3 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Starting filesystem backup..."
+    tar -czf /backups/files-$(date +%Y%m%d-%H%M%S).tar.gz /data
+    echo "Filesystem backup completed"
+
+# Configuration backup - weekly on Sunday at 4 AM
+- name: "config-backup"
+  schedule: "0 4 * * 0"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Starting configuration backup..."
+    cp -r /etc/app-config /backups/config-$(date +%Y%m%d-%H%M%S)
+    echo "Configuration backup completed"
+
+# Cleanup old backups - daily at 5 AM
+- name: "backup-cleanup"
+  schedule: "0 5 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Cleaning up old backups..."
+    find /backups -type f -mtime +$BACKUP_RETENTION_DAYS -delete
+    echo "Backup cleanup completed"

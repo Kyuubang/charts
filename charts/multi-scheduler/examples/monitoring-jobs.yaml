@@ -1,0 +1,129 @@
+# Monitoring and Health Check Example
+# This example shows how to set up monitoring and health check jobs
+
+image: "curlimages/curl:latest"
+
+env:
+- name: "SLACK_WEBHOOK_URL"
+  value: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+- name: "MONITORING_ENDPOINTS"
+  value: "https://api.example.com/health,https://app.example.com/status"
+- name: "ALERT_EMAIL"
+  value: "alerts@example.com"
+
+resources:
+  limits:
+    cpu: "100m"
+    memory: "64Mi"
+  requests:
+    cpu: "50m"
+    memory: "32Mi"
+
+cronjobs:
+# Health check - every 5 minutes
+- name: "health-check"
+  schedule: "*/5 * * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Starting health checks..."
+    for endpoint in $(echo $MONITORING_ENDPOINTS | tr ',' ' '); do
+      echo "Checking $endpoint"
+      if curl -f -s --max-time 10 "$endpoint" > /dev/null; then
+        echo "✅ $endpoint is healthy"
+      else
+        echo "❌ $endpoint is down"
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"🚨 Health check failed for $endpoint\"}" \
+          "$SLACK_WEBHOOK_URL"
+      fi
+    done
+
+# SSL certificate check - daily at 9 AM
+- name: "ssl-cert-check"
+  schedule: "0 9 * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Checking SSL certificates..."
+    for endpoint in $(echo $MONITORING_ENDPOINTS | tr ',' ' '); do
+      domain=$(echo $endpoint | sed 's|https://||' | sed 's|/.*||')
+      expiry=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d= -f2)
+      expiry_timestamp=$(date -d "$expiry" +%s)
+      current_timestamp=$(date +%s)
+      days_until_expiry=$(( (expiry_timestamp - current_timestamp) / 86400 ))
+      
+      if [ $days_until_expiry -lt 30 ]; then
+        echo "⚠️ SSL certificate for $domain expires in $days_until_expiry days"
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"⚠️ SSL certificate for $domain expires in $days_until_expiry days\"}" \
+          "$SLACK_WEBHOOK_URL"
+      else
+        echo "✅ SSL certificate for $domain is valid for $days_until_expiry days"
+      fi
+    done
+
+# Disk space check - every hour
+- name: "disk-space-check"
+  schedule: "0 * * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Checking disk space..."
+    usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+    if [ $usage -gt 80 ]; then
+      echo "⚠️ Disk usage is at ${usage}%"
+      curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"⚠️ Disk usage is at ${usage}%\"}" \
+        "$SLACK_WEBHOOK_URL"
+    else
+      echo "✅ Disk usage is at ${usage}%"
+    fi
+
+# Database connection check - every 15 minutes
+- name: "database-check"
+  schedule: "*/15 * * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Checking database connection..."
+    if timeout 10 nc -z database-host 5432; then
+      echo "✅ Database is reachable"
+    else
+      echo "❌ Database connection failed"
+      curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"🚨 Database connection check failed\"}" \
+        "$SLACK_WEBHOOK_URL"
+    fi
+
+# Log analysis - every hour
+- name: "log-analysis"
+  schedule: "0 * * * *"
+  timezone: "UTC"
+  suspend: false
+  command:
+  - "/bin/sh"
+  - "-c"
+  - |
+    echo "Analyzing logs for errors..."
+    error_count=$(grep -c "ERROR" /var/log/app.log || echo "0")
+    if [ $error_count -gt 10 ]; then
+      echo "⚠️ Found $error_count errors in the last hour"
+      curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"⚠️ Found $error_count errors in the application logs\"}" \
+        "$SLACK_WEBHOOK_URL"
+    else
+      echo "✅ Log analysis complete - $error_count errors found"
+    fi
