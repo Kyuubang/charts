@@ -1,5 +1,31 @@
 apiVersion: v1
 entries:
+  multi-scheduler:
+  - annotations:
+      category: Infrastructure
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-07-23T08:23:13.273176436Z"
+    description: A Helm chart for managing multiple CronJobs with shared configuration
+    digest: e6c2a014ca60acb0c39dfdd8ff0abfc83623ca8d554ebc370afef3561cb7ca5f
+    home: https://github.com/Kyuubang/charts
+    keywords:
+    - cronjob
+    - scheduler
+    - kubernetes
+    - batch
+    - jobs
+    maintainers:
+    - email: your-email@example.com
+      name: Kyuubang
+    name: multi-scheduler
+    sources:
+    - https://github.com/Kyuubang/charts/tree/master/charts/multi-scheduler
+    type: application
+    urls:
+    - multi-scheduler-0.1.1.tgz
+    version: 0.1.1
   vector-kube-metrics:
   - apiVersion: v2
     appVersion: 0.34.0
@@ -22,4 +48,4 @@ entries:
     urls:
     - vector-kube-metrics-0.1.0.tgz
     version: 0.1.0
-generated: "2025-07-23T06:52:40.818679027Z"
+generated: "2025-07-23T08:23:13.400067185Z"
