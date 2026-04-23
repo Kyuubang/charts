@@ -1,7 +1,7 @@
 apiVersion: v2
 name: multi-scheduler
 description: A Helm chart for managing multiple CronJobs with shared configuration
-version: 0.1.1
+version: 0.2.0
 appVersion: "1.0.0"
 type: application
 
@@ -17,8 +17,8 @@ sources:
 - https://github.com/Kyuubang/charts/tree/master/charts/multi-scheduler
 
 maintainers:
-- name: Kyuubang
-  email: your-email@example.com
+- name: ahmad bayhaqi
+  email: ahmad.bayhaqi@nawatech.co
 
 annotations:
   category: Infrastructure

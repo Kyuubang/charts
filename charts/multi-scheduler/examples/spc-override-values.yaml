@@ -1,0 +1,42 @@
+image: "myapp:v1.0.0"
+
+env:
+- name: "APP_ENV"
+  value: "production"
+
+resources:
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+
+# Global SPC defaults — applies to all cronjobs unless overridden
+spc:
+  name: testing-spc
+  path: /mnt/app
+  secretName: global-env
+
+cronjobs:
+# Uses all global SPC settings as-is
+- name: "job-global-spc"
+  schedule: "0 1 * * *"
+  command:
+  - "/bin/sh"
+  - "-c"
+  - "echo hello"
+
+# Inherits global spc.name and spc.path, overrides only secretName
+- name: "job-custom-subpath"
+  schedule: "0 2 * * *"
+  spc:
+    secretName: secret-env
+
+# Fully overrides all SPC settings with a different provider
+- name: "job-full-override"
+  schedule: "0 3 * * *"
+  spc:
+    name: other-spc
+    path: /mnt/other
+    secretName: other-env

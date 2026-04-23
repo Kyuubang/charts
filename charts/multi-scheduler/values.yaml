@@ -55,6 +55,9 @@ cronjobs:
   #   - "/bin/sh"
   #   - "-c"
   #   - "/scripts/backup.sh"
+  # Optional: Define custom args for this job
+  # args:
+  #   - "--full"
 
   # Example 2: Weekly cleanup job with different timezone
 - name: "weekly-cleanup"

@@ -1,4 +1,5 @@
 {{- range .Values.cronjobs }}
+{{- $ctx := dict "job" . "root" $ }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -17,28 +18,44 @@ spec:
           containers:
           - name : {{ .name }}
             env:
-            {{- range .Values.env }}
+            {{- range $.Values.env }}
             - name: {{ .name }}
               value: {{ .value }}
             {{- end }}
-            image: {{ .Values.image }}
+            image: {{ .image | default $.Values.image }}
             imagePullPolicy: Always
+            {{- if .command }}
             command:
-            {{ - range .command }}
-            - "{{ . }}"
-            {{ - end }}
-            resources: {{ toYaml .Values.resources | nindent 12 }}
+            {{- range .command }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .args }}
+            args:
+            {{- range .args }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            resources: {{ toYaml $.Values.resources | nindent 12 }}
+            {{- $spcMounts := include "multi-scheduler.spcVolumeMounts" $ctx | trim }}
+            {{- if $spcMounts }}
+            volumeMounts:{{ $spcMounts | nindent 12 }}
+            {{- end }}
           dnsPolicy: ClusterFirst
-          {{ if .Values.imagePullSecrets }}
+          {{- if $.Values.imagePullSecrets }}
           imagePullSecrets:
-          {{- range .Values.imagePullSecrets }}
+          {{- range $.Values.imagePullSecrets }}
           - name: {{ .name }}
           {{- end }}
-          {{ end }}
+          {{- end }}
           restartPolicy: Never
+          {{- $spcVols := include "multi-scheduler.spcVolumes" $ctx | trim }}
+          {{- if $spcVols }}
+          volumes:{{ $spcVols | nindent 10 }}
+          {{- end }}
   schedule: {{ .schedule }}
   successfulJobsHistoryLimit: 3
   suspend: {{ .suspend | default "false" }}
-  timezone: {{ .timezone | default "UTC" }}
+  timezone: {{ .timezone | default "Asia/Jakarta" }}
 ---
 {{- end }}
