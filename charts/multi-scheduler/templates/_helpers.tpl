@@ -2,11 +2,16 @@
 Resolve the effective SecretProviderClass name for a CronJob.
 Accepts: dict with "job" (current cronjob) and "root" ($ root context).
 Per-job spc.name takes precedence over the global spc.name.
+Returns empty string when neither level has spc.name set.
 */}}
 {{- define "multi-scheduler.spcName" -}}
 {{- $globalSpc := .root.Values.spc | default dict }}
 {{- $cronSpc := .job.spc | default dict }}
-{{- coalesce $cronSpc.name $globalSpc.name }}
+{{- if $cronSpc.name -}}
+{{- $cronSpc.name -}}
+{{- else if $globalSpc.name -}}
+{{- $globalSpc.name -}}
+{{- end -}}
 {{- end }}
 
 {{/*
@@ -17,18 +22,29 @@ Defaults to "/mnt/secrets" if neither job nor global config provides a path.
 {{- define "multi-scheduler.spcPath" -}}
 {{- $globalSpc := .root.Values.spc | default dict }}
 {{- $cronSpc := .job.spc | default dict }}
-{{- coalesce $cronSpc.path $globalSpc.path | default "/mnt/secrets" }}
+{{- if $cronSpc.path -}}
+{{- $cronSpc.path -}}
+{{- else if $globalSpc.path -}}
+{{- $globalSpc.path -}}
+{{- else -}}
+/mnt/secrets
+{{- end -}}
 {{- end }}
 
 {{/*
 Resolve the effective SPC secret name (used as volume subPath) for a CronJob.
 Accepts: dict with "job" and "root".
 Maps to the secret name in the Key Vault / SecretProviderClass object.
+Returns empty string when not set.
 */}}
 {{- define "multi-scheduler.spcSecretName" -}}
 {{- $globalSpc := .root.Values.spc | default dict }}
 {{- $cronSpc := .job.spc | default dict }}
-{{- coalesce $cronSpc.secretName $globalSpc.secretName | default "" }}
+{{- if $cronSpc.secretName -}}
+{{- $cronSpc.secretName -}}
+{{- else if $globalSpc.secretName -}}
+{{- $globalSpc.secretName -}}
+{{- end -}}
 {{- end }}
 
 {{/*
@@ -39,10 +55,14 @@ Returns list items (starting with "- name:") so the caller places the
 Returns empty string when SPC is not configured.
 */}}
 {{- define "multi-scheduler.spcVolumeMounts" -}}
-{{- if (include "multi-scheduler.spcName" . | trim) }}
+{{- $spcName := include "multi-scheduler.spcName" . | trim }}
+{{- if $spcName }}
 - name: secret-volume
   mountPath: {{ include "multi-scheduler.spcPath" . }}
-  subPath: {{ include "multi-scheduler.spcSecretName" . }}
+  {{- $secretName := include "multi-scheduler.spcSecretName" . | trim }}
+  {{- if $secretName }}
+  subPath: {{ $secretName }}
+  {{- end }}
 {{- end -}}
 {{- end }}
 
