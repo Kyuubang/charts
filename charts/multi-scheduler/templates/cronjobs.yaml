@@ -17,10 +17,18 @@ spec:
         spec:
           containers:
           - name : {{ .name }}
+            {{- if .env }}
+            env:
+            {{- range .env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- else if $.Values.env }}
             env:
             {{- range $.Values.env }}
             - name: {{ .name }}
-              value: {{ .value }}
+              value: {{ .value | quote }}
+            {{- end }}
             {{- end }}
             image: {{ .image | default $.Values.image }}
             imagePullPolicy: Always
@@ -36,7 +44,10 @@ spec:
             - {{ . | quote }}
             {{- end }}
             {{- end }}
-            resources: {{ toYaml $.Values.resources | nindent 12 }}
+            {{- $effectiveResources := .resources | default $.Values.resources }}
+            {{- if $effectiveResources }}
+            resources: {{ toYaml $effectiveResources | nindent 12 }}
+            {{- end }}
             {{- $spcMounts := include "multi-scheduler.spcVolumeMounts" $ctx | trim }}
             {{- if $spcMounts }}
             volumeMounts:{{ $spcMounts | nindent 12 }}
