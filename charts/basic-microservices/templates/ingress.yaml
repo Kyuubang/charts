@@ -1,0 +1,28 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "basic-microservices.ingressName" (dict "prefix" .Values.prefix) }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "basic-microservices.labels" (dict "context" .) | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          {{- range .Values.microservices }}
+          - path: {{ printf "%s%s" ($.Values.ingress.pathPrefix | trimSuffix "/" | default "") (.path | default "") }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "basic-microservices.svcName" (dict "prefix" $.Values.prefix "name" .name) }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
+{{- end }}

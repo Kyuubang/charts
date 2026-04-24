@@ -1,0 +1,24 @@
+apiVersion: v2
+name: basic-microservices
+description: A Helm chart for managing multiple microservices with shared configuration
+version: 0.1.0
+appVersion: "1.0.0"
+type: application
+
+keywords:
+- ingress routing
+- microservices
+- kubernetes
+- services
+
+home: https://github.com/Kyuubang/charts
+sources:
+- https://github.com/Kyuubang/charts/tree/master/charts/basic-microservices
+
+maintainers:
+- name: ahmad bayhaqi
+  email: ahmad.bayhaqi@nawatech.co
+
+annotations:
+  category: Infrastructure
+  licenses: Apache-2.0

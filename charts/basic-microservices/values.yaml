@@ -1,0 +1,82 @@
+# -- Prefix applied to all resource names 
+prefix: contoso-ms
+
+# -- Kubernetes namespace for all resources
+namespace: microsvc
+
+# -- Fallback image used when a microservice does not specify its own
+image: "nginx:latest"
+
+# Ingress — single Ingress resource routing to all microservices by path
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  # -- Optional prefix prepended to every microservice path (e.g. "/api/v3")
+  pathPrefix: ""
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 35m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      more_clear_headers 'X-Powered-By';
+
+# Azure Key Vault CSI Secret Provider — global settings shared by all microservices.
+# Per-microservice spc fields override these when set.
+spc:
+  enabled: false
+  tenantId: ""
+  keyvaultName: ""
+  userAssignedIdentityID: ""
+
+# -- Default environment variables. Overridden (not merged) by microservice-level env.
+env: []
+
+# -- Default resource limits/requests. Overridden by microservice-level resources.
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Microservice definitions.
+# Fields here override global defaults; omit a field to inherit the global value.
+microservices:
+- name: booking-api
+  port: 8080
+  # -- Path used in Ingress routing (combined with ingress.pathPrefix)
+  path: /booking
+  replicas: 10
+
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 80
+
+  # Uncomment to override global resources for this microservice:
+  # resources:
+  #   limits:
+  #     cpu: 1024m
+  #     memory: 1Gi
+  #   requests:
+  #     cpu: 300m
+  #     memory: 512Mi
+
+  # Uncomment to override global env for this microservice:
+  # env:
+  #   - name: SERVICE_CODE
+  #     value: BOOKING
+
+  # SPC fields override global spc defaults (tenantId, keyvaultName, userAssignedIdentityID
+  # are inherited from global spc unless set here).
+  # Name is auto-generated as: spc-{prefix}-{name}
+  spc:
+    # -- File path where the secret is mounted inside the container
+    mountPath: /var/www/html/.env
+    # -- Azure Key Vault secret object name (also used as the volume subPath)
+    objectName: booking-api-env

@@ -1,0 +1,73 @@
+{{- range .Values.microservices }}
+{{- $ms := . }}
+{{- $msName := include "basic-microservices.msFullName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+{{- $spcEnabled := and $.Values.spc.enabled $ms.spc }}
+{{- $spc := dict }}
+{{- if $spcEnabled }}
+{{- $spc = include "basic-microservices.spcResolve" (dict "global" $.Values "ms" $ms) | fromYaml }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $msName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "basic-microservices.labels" (dict "context" $) | nindent 4 }}
+    {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 4 }}
+spec:
+  replicas: {{ $ms.replicas | default 1 }}
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      containers:
+        - name: {{ $msName }}
+          image: {{ $ms.image | default $.Values.image }}
+          imagePullPolicy: Always
+          ports:
+            - name: http-port
+              containerPort: {{ $ms.port }}
+              protocol: TCP
+          {{- $env := include "basic-microservices.env" (dict "global" $.Values "ms" $ms) }}
+          {{- if $env }}
+          env:
+            {{- $env | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- include "basic-microservices.resources" (dict "global" $.Values "ms" $ms) | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          {{- if $spcEnabled }}
+          volumeMounts:
+            - name: secret-volume
+              mountPath: {{ $spc.mountPath }}
+              subPath: {{ $spc.objectName }}
+          {{- end }}
+      {{- if $spcEnabled }}
+      volumes:
+        - name: secret-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "basic-microservices.spcName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+      {{- end }}
+{{- end }}

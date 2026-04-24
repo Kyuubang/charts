@@ -1,0 +1,23 @@
+{{- range .Values.microservices }}
+{{- $ms := . }}
+{{- $msName := include "basic-microservices.msFullName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+{{- $svcName := include "basic-microservices.svcName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "basic-microservices.labels" (dict "context" $) | nindent 4 }}
+    {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ $ms.port }}
+      protocol: TCP
+      targetPort: {{ $ms.port }}
+  selector:
+    {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 4 }}
+{{- end }}

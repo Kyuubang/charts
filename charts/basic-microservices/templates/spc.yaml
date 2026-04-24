@@ -1,0 +1,31 @@
+{{- if $.Values.spc.enabled }}
+{{- range .Values.microservices }}
+{{- $ms := . }}
+{{- if $ms.spc }}
+{{- $spc := include "basic-microservices.spcResolve" (dict "global" $.Values "ms" $ms) | fromYaml }}
+{{- $spcName := include "basic-microservices.spcName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ $spcName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "basic-microservices.labels" (dict "context" $) | nindent 4 }}
+    {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 4 }}
+spec:
+  provider: azure
+  parameters:
+    keyvaultName: {{ $spc.keyvaultName }}
+    tenantId: {{ $spc.tenantId }}
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: {{ $spc.userAssignedIdentityID }}
+    objects: |
+      array:
+        - |
+          objectName: {{ $spc.objectName }}
+          objectType: secret
+{{- end }}
+{{- end }}
+{{- end }}

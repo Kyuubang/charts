@@ -1,0 +1,30 @@
+{{- range .Values.microservices }}
+{{- $ms := . }}
+{{- if and $ms.hpa $ms.hpa.enabled }}
+{{- $msName := include "basic-microservices.msFullName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+{{- $hpaName := include "basic-microservices.hpaName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $hpaName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "basic-microservices.labels" (dict "context" $) | nindent 4 }}
+    {{- include "basic-microservices.selectorLabels" (dict "prefix" $.Values.prefix "name" $ms.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $msName }}
+  minReplicas: {{ $ms.hpa.minReplicas | default 1 }}
+  maxReplicas: {{ $ms.hpa.maxReplicas | default 10 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $ms.hpa.targetCPUUtilizationPercentage | default 80 }}
+{{- end }}
+{{- end }}
