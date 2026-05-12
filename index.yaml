@@ -31,6 +31,31 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.0.0
+    created: "2026-05-12T03:11:53.008756359Z"
+    description: A Helm chart for managing multiple CronJobs with shared configuration
+    digest: dae5fdadff04cd1f98384635a823fe673f2aa45a2e65c80e2406ce56ebc61454
+    home: https://github.com/Kyuubang/charts
+    keywords:
+    - cronjob
+    - scheduler
+    - kubernetes
+    - batch
+    - jobs
+    maintainers:
+    - email: ahmad.bayhaqi@nawatech.co
+      name: ahmad bayhaqi
+    name: multi-scheduler
+    sources:
+    - https://github.com/Kyuubang/charts/tree/master/charts/multi-scheduler
+    type: application
+    urls:
+    - multi-scheduler-0.2.3.tgz
+    version: 0.2.3
+  - annotations:
+      category: Infrastructure
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.0.0
     created: "2026-04-23T07:44:23.029860792Z"
     description: A Helm chart for managing multiple CronJobs with shared configuration
     digest: ce14098bbc4520e61ac877bdc0b799f981c0b4d5ad670ad7de747abc7563f125
@@ -148,4 +173,4 @@ entries:
     urls:
     - vector-kube-metrics-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-24T02:55:22.734754508Z"
+generated: "2026-05-12T03:11:53.008780635Z"
