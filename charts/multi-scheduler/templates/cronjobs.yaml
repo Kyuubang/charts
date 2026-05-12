@@ -16,7 +16,7 @@ spec:
             app: {{ .name }}
         spec:
           containers:
-          - name : {{ .name }}
+          - name: {{ .name }}
             {{- if .env }}
             env:
             {{- range .env }}
@@ -49,10 +49,18 @@ spec:
             resources: {{ toYaml $effectiveResources | nindent 12 }}
             {{- end }}
             {{- $spcMounts := include "multi-scheduler.spcVolumeMounts" $ctx | trim }}
-            {{- if $spcMounts }}
-            volumeMounts:{{ $spcMounts | nindent 12 }}
+            {{- $extraVolumeMounts := .extraVolumeMounts | default $.Values.extraVolumeMounts }}
+            {{- if or $spcMounts $extraVolumeMounts }}
+            volumeMounts:
+            {{- if $spcMounts }}{{ $spcMounts | nindent 12 }}{{- end }}
+            {{- if $extraVolumeMounts }}{{ toYaml $extraVolumeMounts | nindent 12 }}{{- end }}
             {{- end }}
           dnsPolicy: ClusterFirst
+          {{- $hostAliases := .hostAliases | default $.Values.hostAliases }}
+          {{- if $hostAliases }}
+          hostAliases:
+          {{- toYaml $hostAliases | nindent 10 }}
+          {{- end }}
           {{- if $.Values.imagePullSecrets }}
           imagePullSecrets:
           {{- range $.Values.imagePullSecrets }}
@@ -61,10 +69,13 @@ spec:
           {{- end }}
           restartPolicy: Never
           {{- $spcVols := include "multi-scheduler.spcVolumes" $ctx | trim }}
-          {{- if $spcVols }}
-          volumes:{{ $spcVols | nindent 10 }}
+          {{- $extraVolumes := .extraVolumes | default $.Values.extraVolumes }}
+          {{- if or $spcVols $extraVolumes }}
+          volumes:
+          {{- if $spcVols }}{{ $spcVols | nindent 10 }}{{- end }}
+          {{- if $extraVolumes }}{{ toYaml $extraVolumes | nindent 10 }}{{- end }}
           {{- end }}
-  schedule: {{ .schedule }}
+  schedule: {{ .schedule | quote }}
   successfulJobsHistoryLimit: 3
   suspend: {{ .suspend | default "false" }}
   timezone: {{ .timezone | default "Asia/Jakarta" }}
