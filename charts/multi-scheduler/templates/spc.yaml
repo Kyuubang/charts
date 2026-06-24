@@ -1,0 +1,29 @@
+{{- $spc := .Values.spc | default dict }}
+{{- if $spc.name }}
+{{- $secretNames := include "multi-scheduler.allSpcSecretNames" . | fromYamlArray | default (list) }}
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ $spc.name }}
+spec:
+  provider: {{ $spc.provider | default "azure" }}
+  parameters:
+    {{- if $spc.keyvaultName }}
+    keyvaultName: {{ $spc.keyvaultName }}
+    {{- end }}
+    {{- if $spc.tenantId }}
+    tenantId: {{ $spc.tenantId }}
+    {{- end }}
+    usePodIdentity: {{ $spc.usePodIdentity | default "false" | quote }}
+    useVMManagedIdentity: {{ $spc.useVMManagedIdentity | default "true" | quote }}
+    {{- if $spc.userAssignedIdentityID }}
+    userAssignedIdentityID: {{ $spc.userAssignedIdentityID }}
+    {{- end }}
+    objects: |
+      array:
+      {{- range $secretNames }}
+        - |
+          objectName: {{ . }}
+          objectType: secret
+      {{- end }}
+{{- end }}

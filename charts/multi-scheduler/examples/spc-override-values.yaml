@@ -15,8 +15,13 @@ resources:
 # Global SPC defaults — applies to all cronjobs unless overridden
 spc:
   name: testing-spc
+  keyvaultName: my-kv
+  tenantId: 00000000-0000-0000-0000-000000000000
+  userAssignedIdentityID: 11111111-1111-1111-1111-111111111111
   path: /mnt/app
-  secretName: global-env
+  secretNames:
+  - global-env
+  - shared-env
 
 cronjobs:
 # Uses all global SPC settings as-is
@@ -31,7 +36,9 @@ cronjobs:
 - name: "job-custom-subpath"
   schedule: "0 2 * * *"
   spc:
-    secretName: secret-env
+    secretNames:
+    - secret-env
+    - db-env
 
 # Fully overrides all SPC settings with a different provider
 - name: "job-full-override"

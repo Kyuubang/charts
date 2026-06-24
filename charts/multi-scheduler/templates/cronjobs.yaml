@@ -46,7 +46,7 @@ spec:
             {{- end }}
             {{- $effectiveResources := .resources | default $.Values.resources }}
             {{- if $effectiveResources }}
-            resources: {{ toYaml $effectiveResources | nindent 12 }}
+            resources: {{ toYaml $effectiveResources | nindent 14 }}
             {{- end }}
             {{- $spcMounts := include "multi-scheduler.spcVolumeMounts" $ctx | trim }}
             {{- $extraVolumeMounts := .extraVolumeMounts | default $.Values.extraVolumeMounts }}

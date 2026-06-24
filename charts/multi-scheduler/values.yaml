@@ -39,6 +39,26 @@ image: "alpine:latest"
 # imagePullSecrets:
 # - name: "my-registry-secret"
 
+# # Global SecretProviderClass config.
+# # If spc.name is set, this chart auto-creates a SecretProviderClass resource.
+# # The objects list is auto-built from:
+# # - spc.secretName / spc.secretNames
+# # - every cronjobs[].spc.secretName / cronjobs[].spc.secretNames
+# #
+# # spc:
+# #   name: "my-global-spc"
+# #   provider: "azure"
+# #   keyvaultName: "my-kv"
+# #   tenantId: "00000000-0000-0000-0000-000000000000"
+# #   usePodIdentity: "false"
+# #   useVMManagedIdentity: "true"
+# #   userAssignedIdentityID: ""
+# #   path: "/mnt/secrets"
+# #   secretName: "app-env"
+# #   # secretNames:
+# #   #   - "app-env"
+# #   #   - "db-env"
+
 # =============================================================================
 # CRONJOBS CONFIGURATION
 # Define your scheduled jobs here

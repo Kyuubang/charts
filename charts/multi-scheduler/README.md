@@ -15,6 +15,8 @@ The multi-scheduler chart allows you to deploy and manage multiple CronJobs in a
 - **Resource Management**: Set CPU and memory limits/requests
 - **Image Pull Secrets**: Support for private container registries
 - **Timezone Support**: Configure different timezones for each CronJob
+- **SPC Auto Create**: Automatically create SecretProviderClass when global `spc.name` is set
+- **Multi Secret Support**: Aggregate secrets from global and per-CronJob SPC config
 
 ## Installation
 
@@ -51,6 +53,21 @@ helm install my-multi-scheduler ./multi-scheduler -f my-values.yaml
 | `resources.requests.memory` | Memory request for all containers | `64Mi` |
 | `imagePullSecrets` | Image pull secrets for private registries | `[]` |
 
+### SecretProviderClass (SPC) Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `spc.name` | If set, chart auto-creates a SecretProviderClass with this name | `""` |
+| `spc.provider` | SPC provider | `azure` |
+| `spc.keyvaultName` | Azure Key Vault name (for Azure provider) | `""` |
+| `spc.tenantId` | Azure tenant ID | `""` |
+| `spc.usePodIdentity` | Use pod identity | `"false"` |
+| `spc.useVMManagedIdentity` | Use VM managed identity | `"true"` |
+| `spc.userAssignedIdentityID` | User assigned managed identity client ID | `""` |
+| `spc.path` | Default mount path for SPC volume | `/mnt/secrets` |
+| `spc.secretName` | Single global secret object name (legacy/compatible) | `""` |
+| `spc.secretNames` | Multiple global secret object names | `[]` |
+
 ### CronJob Configuration Parameters
 
 | Parameter | Description | Default | Required |
@@ -60,6 +77,75 @@ helm install my-multi-scheduler ./multi-scheduler -f my-values.yaml
 | `cronjobs[].suspend` | Whether to suspend the CronJob | `false` | No |
 | `cronjobs[].timezone` | Timezone for the CronJob | `UTC` | No |
 | `cronjobs[].command` | Command to execute in the container | - | No |
+| `cronjobs[].spc.name` | Override SPC name for this CronJob | inherits `spc.name` | No |
+| `cronjobs[].spc.path` | Override SPC mount path for this CronJob | inherits `spc.path` | No |
+| `cronjobs[].spc.secretName` | Single secret object for this CronJob | inherits global | No |
+| `cronjobs[].spc.secretNames` | Multiple secret objects for this CronJob | inherits global | No |
+
+## SPC Usage
+
+### How SPC auto-create works
+
+When `spc.name` is defined globally, this chart renders one `SecretProviderClass` resource.
+
+The generated `spec.parameters.objects` includes all unique secret names discovered from:
+
+- `spc.secretName`
+- `spc.secretNames[]`
+- `cronjobs[].spc.secretName`
+- `cronjobs[].spc.secretNames[]`
+
+This means you only define secrets in values, and the chart builds the SPC objects list automatically.
+
+### Mount behavior in CronJobs
+
+- If exactly one effective secret name is resolved for a CronJob, mount uses `subPath`.
+- If multiple secret names are resolved, mount is directory-based (no `subPath`) so all files are available.
+
+### Example: Global SPC with auto-created objects
+
+```yaml
+spc:
+  name: testing-spc
+  provider: azure
+  keyvaultName: my-kv
+  tenantId: 00000000-0000-0000-0000-000000000000
+  userAssignedIdentityID: 11111111-1111-1111-1111-111111111111
+  path: /mnt/app
+  secretNames:
+    - global-env
+    - shared-env
+
+cronjobs:
+  - name: job-global-spc
+    schedule: "0 1 * * *"
+
+  - name: job-custom-secrets
+    schedule: "0 2 * * *"
+    spc:
+      secretNames:
+        - secret-env
+        - db-env
+
+  - name: job-full-override
+    schedule: "0 3 * * *"
+    spc:
+      name: other-spc
+      path: /mnt/other
+      secretName: other-env
+```
+
+### Render and inspect
+
+```bash
+helm template test ./multi-scheduler -f ./multi-scheduler/examples/spc-override-values.yaml
+```
+
+Expected result:
+
+- CronJobs using global SPC reference `testing-spc` in CSI `secretProviderClass`.
+- Global SPC includes `global-env`, `shared-env`, `secret-env`, `db-env`, and `other-env` in `objects`.
+- Fully overridden jobs can use a different SPC name, for example `other-spc`.
 
 ## Usage Examples
 
