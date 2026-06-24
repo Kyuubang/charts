@@ -1,6 +1,8 @@
 {{- range .Values.microservices }}
 {{- $ms := . }}
-{{- if and $ms.hpa $ms.hpa.enabled }}
+{{- $hasCPU := and $ms.hpa (hasKey $ms.hpa "targetCPUUtilizationPercentage") }}
+{{- $hasMemory := and $ms.hpa (hasKey $ms.hpa "targetMemoryUtilizationPercentage") }}
+{{- if and $ms.hpa $ms.hpa.enabled (or $hasCPU $hasMemory) }}
 {{- $msName := include "basic-microservices.msFullName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
 {{- $hpaName := include "basic-microservices.hpaName" (dict "prefix" $.Values.prefix "name" $ms.name) }}
 ---
@@ -20,11 +22,21 @@ spec:
   minReplicas: {{ $ms.hpa.minReplicas | default 1 }}
   maxReplicas: {{ $ms.hpa.maxReplicas | default 10 }}
   metrics:
+    {{- if $hasCPU }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ $ms.hpa.targetCPUUtilizationPercentage | default 80 }}
+          averageUtilization: {{ $ms.hpa.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $hasMemory }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $ms.hpa.targetMemoryUtilizationPercentage }}
+    {{- end }}
 {{- end }}
 {{- end }}
