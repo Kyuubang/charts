@@ -6,6 +6,30 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.0.0
+    created: "2026-07-30T11:43:35.328671736Z"
+    description: A Helm chart for managing multiple microservices with shared configuration
+    digest: 445206b620683b23fda291b4af8774f158293d4b2ccf3b23e1ee7f5c22258356
+    home: https://github.com/Kyuubang/charts
+    keywords:
+    - ingress routing
+    - microservices
+    - kubernetes
+    - services
+    maintainers:
+    - email: ahmad.bayhaqi@nawatech.co
+      name: ahmad bayhaqi
+    name: basic-microservices
+    sources:
+    - https://github.com/Kyuubang/charts/tree/master/charts/basic-microservices
+    type: application
+    urls:
+    - basic-microservices-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      category: Infrastructure
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.0.0
     created: "2026-06-24T01:50:15.510992467Z"
     description: A Helm chart for managing multiple microservices with shared configuration
     digest: 8720f87069b28cbd7358835ea805e250792803b5a6e60a275f010c2967cd70ae
@@ -222,4 +246,4 @@ entries:
     urls:
     - vector-kube-metrics-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-24T09:35:53.848467326Z"
+generated: "2026-07-30T11:43:35.328696105Z"
